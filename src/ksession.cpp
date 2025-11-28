@@ -31,8 +31,15 @@
 #include "HistorySearch.h"
 
 KSession::KSession(QObject *parent) :
-    QObject(parent), m_session(createSession(""))
+    QObject(parent),
+    _initialWorkingDirectory(),
+    _shellProgram(getenv("SHELL") != NULL ? QString(getenv("SHELL")) : "/bin/bash"),
+    _shellProgramArgs(),
+    m_session(createSession(""))
 {
+    m_session->setProgram(_shellProgram); // Add this
+    m_session->setArguments(_shellProgramArgs); // Add this
+
     connect(m_session, SIGNAL(started()), this, SIGNAL(started()));
     connect(m_session, SIGNAL(finished()), this, SLOT(sessionFinished()));
     connect(m_session, SIGNAL(titleChanged()), this, SIGNAL(titleChanged()));
@@ -71,14 +78,14 @@ Session *KSession::createSession(QString name)
 
     QString envshell = getenv("SHELL");
     QString shellProg = envshell != NULL ? envshell : "/bin/bash";
-    session->setProgram(shellProg);
+    //session->setProgram(shellProg); // Removed
 
     setenv("TERM", "xterm", 1);
 
     //session->setProgram();
 
-    QStringList args("");
-    session->setArguments(args);
+    //QStringList args(""); // Removed
+    //session->setArguments(args); // Removed
     session->setAutoClose(true);
 
     session->setCodec(QTextCodec::codecForName("UTF-8"));
@@ -172,6 +179,7 @@ void KSession::setEnvironment(const QStringList &environment)
 
 void KSession::setShellProgram(const QString &progname)
 {
+    _shellProgram = progname; // Store the program name
     m_session->setProgram(progname);
 }
 
@@ -190,6 +198,7 @@ QString KSession::getInitialWorkingDirectory()
 
 void KSession::setArgs(const QStringList &args)
 {
+    _shellProgramArgs = args; // Store the arguments
     m_session->setArguments(args);
 }
 
@@ -308,7 +317,17 @@ QString KSession::foregroundProcessName()
     return m_session->foregroundProcessName();
 }
 
-QString KSession::currentDir() 
+QString KSession::currentDir()
 {
     return m_session->currentDir();
+}
+
+QString KSession::getShellProgram() const
+{
+    return _shellProgram;
+}
+
+QStringList KSession::getShellProgramArgs() const
+{
+    return _shellProgramArgs;
 }

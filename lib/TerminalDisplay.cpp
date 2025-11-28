@@ -224,14 +224,14 @@ void TerminalDisplay::fontChange(const QFont&)
   // "Base character width on widest ASCII character. This prevents too wide
   //  characters in the presence of double wide (e.g. Japanese) characters."
   // Get the width from representative normal width characters
-  _fontWidth = qRound((double)fm.width(QLatin1String(REPCHAR))/(double)qstrlen(REPCHAR));
+  _fontWidth = qRound((double)fm.horizontalAdvance(QLatin1String(REPCHAR))/(double)qstrlen(REPCHAR));
 
   _fixedFont = true;
 
-  int fw = fm.width(QLatin1Char(REPCHAR[0]));
+  int fw = fm.horizontalAdvance(QLatin1Char(REPCHAR[0]));
   for(unsigned int i=1; i< qstrlen(REPCHAR); i++)
   {
-    if (fw != fm.width(QLatin1Char(REPCHAR[i])))
+    if (fw != fm.horizontalAdvance(QLatin1Char(REPCHAR[i])))
     {
       _fixedFont = false;
       break;
@@ -368,11 +368,11 @@ TerminalDisplay::TerminalDisplay(QQuickItem *parent)
 ,_filterChain(new TerminalImageFilterChain())
 ,_cursorShape(Emulation::KeyboardCursorShape::BlockCursor)
 ,mMotionAfterPasting(NoMoveScreenWindow)
+,_leftBaseMargin(1)
+,_topBaseMargin(1)
 ,m_font("Monospace", 12)
 ,m_color_role(QPalette::Background)
 ,m_full_cursor_height(false)
-,_leftBaseMargin(1)
-,_topBaseMargin(1)
 ,_drawLineChars(true)
 {
   // terminal applications are not designed with Right-To-Left in mind,
@@ -892,7 +892,7 @@ void TerminalDisplay::drawTextFragment(QPainter& painter ,
     const QColor backgroundColor = style->backgroundColor.color(_colorTable);
 
     // draw background if different from the display's background color
-    if ( backgroundColor != palette().background().color() )
+    if ( backgroundColor != palette().window().color() )
         drawBackground(painter,rect,backgroundColor,
                        false /* do not use transparency */);
 
@@ -1148,112 +1148,111 @@ void TerminalDisplay::updateImage()
   // debugging variable, this records the number of lines that are found to
   // be 'dirty' ( ie. have changed from the old _image to the new _image ) and
   // which therefore need to be repainted
-  int dirtyLineCount = 0;
-
-  for (y = 0; y < linesToUpdate; ++y)
-  {
-    const Character*       currentLine = &_image[y*this->_columns];
-    const Character* const newLine = &newimg[y*columns];
-
-    bool updateLine = false;
-
-    // The dirty mask indicates which characters need repainting. We also
-    // mark surrounding neighbours dirty, in case the character exceeds
-    // its cell boundaries
-    memset(dirtyMask, 0, columnsToUpdate+2);
-
-    for( x = 0 ; x < columnsToUpdate ; ++x)
+    // int dirtyLineCount = 0; // Removed as unused
+      for (y = 0; y < linesToUpdate; ++y)
     {
-        if ( newLine[x] != currentLine[x] )
-        {
-            dirtyMask[x] = true;
-        }
-    }
-
-    if (!_resizing) // not while _resizing, we're expecting a paintEvent
-    for (x = 0; x < columnsToUpdate; ++x)
-    {
-      _hasBlinker |= (newLine[x].rendition & RE_BLINK);
-
-      // Start drawing if this character or the next one differs.
-      // We also take the next one into account to handle the situation
-      // where characters exceed their cell width.
-      if (dirtyMask[x])
+      const Character*       currentLine = &_image[y*this->_columns];
+      const Character* const newLine = &newimg[y*columns];
+  
+      bool updateLine = false;
+  
+      // The dirty mask indicates which characters need repainting. We also
+      // mark surrounding neighbours dirty, in case the character exceeds
+      // its cell boundaries
+      memset(dirtyMask, 0, columnsToUpdate+2);
+  
+      for( x = 0 ; x < columnsToUpdate ; ++x)
       {
-        wchar_t c = newLine[x+0].character;
-        if ( !c )
-            continue;
-        int p = 0;
-        disstrU[p++] = c; //fontMap(c);
-        bool lineDraw = isLineChar(c);
-        bool doubleWidth = (x+1 == columnsToUpdate) ? false : (newLine[x+1].character == 0);
-        cr = newLine[x].rendition;
-        _clipboard = newLine[x].backgroundColor;
-        if (newLine[x].foregroundColor != cf) cf = newLine[x].foregroundColor;
-        int lln = columnsToUpdate - x;
-        for (len = 1; len < lln; ++len)
-        {
-            const Character& ch = newLine[x+len];
-
-            if (!ch.character)
-                continue; // Skip trailing part of multi-col chars.
-
-            bool nextIsDoubleWidth = (x+len+1 == columnsToUpdate) ? false : (newLine[x+len+1].character == 0);
-
-            if (  ch.foregroundColor != cf ||
-                  ch.backgroundColor != _clipboard ||
-                  ch.rendition != cr ||
-                  !dirtyMask[x+len] ||
-                  isLineChar(c) != lineDraw ||
-                  nextIsDoubleWidth != doubleWidth )
-            break;
-
-          disstrU[p++] = c; //fontMap(c);
-        }
-
-        std::wstring unistr(disstrU, p);
-
-        bool saveFixedFont = _fixedFont;
-        if (lineDraw)
-           _fixedFont = false;
-        if (doubleWidth)
-           _fixedFont = false;
-
-        updateLine = true;
-
-        _fixedFont = saveFixedFont;
-        x += len - 1;
+          if ( newLine[x] != currentLine[x] )
+          {
+              dirtyMask[x] = true;
+          }
       }
-
+  
+      if (!_resizing) // not while _resizing, we're expecting a paintEvent
+      for (x = 0; x < columnsToUpdate; ++x)
+      {
+        _hasBlinker |= (newLine[x].rendition & RE_BLINK);
+  
+        // Start drawing if this character or the next one differs.
+        // We also take the next one into account to handle the situation
+        // where characters exceed their cell width.
+        if (dirtyMask[x])
+        {
+          wchar_t c = newLine[x+0].character;
+          if ( !c )
+              continue;
+          int p = 0;
+          disstrU[p++] = c; //fontMap(c);
+          bool lineDraw = isLineChar(c);
+          bool doubleWidth = (x+1 == columnsToUpdate) ? false : (newLine[x+1].character == 0);
+          cr = newLine[x].rendition;
+          _clipboard = newLine[x].backgroundColor;
+          if (newLine[x].foregroundColor != cf) cf = newLine[x].foregroundColor;
+          int lln = columnsToUpdate - x;
+          for (len = 1; len < lln; ++len)
+          {
+              const Character& ch = newLine[x+len];
+  
+              if (!ch.character)
+                  continue; // Skip trailing part of multi-col chars.
+  
+              bool nextIsDoubleWidth = (x+len+1 == columnsToUpdate) ? false : (newLine[x+len+1].character == 0);
+  
+              if (  ch.foregroundColor != cf ||
+                    ch.backgroundColor != _clipboard ||
+                    ch.rendition != cr ||
+                    !dirtyMask[x+len] ||
+                    isLineChar(c) != lineDraw ||
+                    nextIsDoubleWidth != doubleWidth )
+              break;
+  
+            disstrU[p++] = c; //fontMap(c);
+          }
+  
+          std::wstring unistr(disstrU, p);
+  
+          bool saveFixedFont = _fixedFont;
+          if (lineDraw)
+             _fixedFont = false;
+          if (doubleWidth)
+             _fixedFont = false;
+  
+          updateLine = true;
+  
+          _fixedFont = saveFixedFont;
+          x += len - 1;
+        }
+  
+      }
+  
+      //both the top and bottom halves of double height _lines must always be redrawn
+      //although both top and bottom halves contain the same characters, only
+      //the top one is actually
+      //drawn.
+      if (_lineProperties.count() > y)
+          updateLine |= (_lineProperties[y] & LINE_DOUBLEHEIGHT);
+  
+      // if the characters on the line are different in the old and the new _image
+      // then this line must be repainted.
+      if (updateLine)
+      {
+          // dirtyLineCount++; // Removed as unused
+  
+          // add the area occupied by this line to the region which needs to be
+          // repainted
+          QRect dirtyRect = QRect( _leftMargin+tLx ,
+                                   _topMargin+tLy+_fontHeight*y ,
+                                   _fontWidth * columnsToUpdate ,
+                                   _fontHeight );
+  
+          dirtyRegion |= dirtyRect;
+      }
+  
+      // replace the line of characters in the old _image with the
+      // current line of the new _image
+      memcpy((void*)currentLine,(const void*)newLine,columnsToUpdate*sizeof(Character));
     }
-
-    //both the top and bottom halves of double height _lines must always be redrawn
-    //although both top and bottom halves contain the same characters, only
-    //the top one is actually
-    //drawn.
-    if (_lineProperties.count() > y)
-        updateLine |= (_lineProperties[y] & LINE_DOUBLEHEIGHT);
-
-    // if the characters on the line are different in the old and the new _image
-    // then this line must be repainted.
-    if (updateLine)
-    {
-        dirtyLineCount++;
-
-        // add the area occupied by this line to the region which needs to be
-        // repainted
-        QRect dirtyRect = QRect( _leftMargin+tLx ,
-                                 _topMargin+tLy+_fontHeight*y ,
-                                 _fontWidth * columnsToUpdate ,
-                                 _fontHeight );
-
-        dirtyRegion |= dirtyRect;
-    }
-
-    // replace the line of characters in the old _image with the
-    // current line of the new _image
-    memcpy((void*)currentLine,(const void*)newLine,columnsToUpdate*sizeof(Character));
-  }
 
   // if the new _image is smaller than the previous _image, then ensure that the area
   // outside the new _image is cleared
@@ -1655,7 +1654,7 @@ int TerminalDisplay::textWidth(const int startColumn, const int length, const in
   QFontMetrics fm(font());
   int result = 0;
   for (int column = 0; column < length; column++) {
-    result += fm.width(_image[loc(startColumn + column, line)].character);
+    result += fm.horizontalAdvance(QString::fromWCharArray(&_image[loc(startColumn + column, line)].character, 1));
   }
   return result;
 }
@@ -2590,7 +2589,7 @@ void TerminalDisplay::mouseDoubleClickEvent(QMouseEvent* ev)
 
 void TerminalDisplay::wheelEvent( QWheelEvent* ev )
 {
-  if (ev->orientation() != Qt::Vertical)
+  if (ev->angleDelta().y() != 0)
     return;
 
   // if the terminal program is not interested mouse events
@@ -2610,10 +2609,10 @@ void TerminalDisplay::wheelEvent( QWheelEvent* ev )
         // to get a reasonable scrolling speed, scroll by one line for every 5 degrees
         // of mouse wheel rotation.  Mouse wheels typically move in steps of 15 degrees,
         // giving a scroll of 3 lines
-        int key = ev->delta() > 0 ? Qt::Key_Up : Qt::Key_Down;
+        int key = ev->angleDelta().y() > 0 ? Qt::Key_Up : Qt::Key_Down;
 
         // QWheelEvent::delta() gives rotation in eighths of a degree
-        int wheelDegrees = ev->delta() / 8;
+        int wheelDegrees = ev->angleDelta().y();
         int linesToScroll = abs(wheelDegrees) / 5;
 
         QKeyEvent keyScrollEvent(QEvent::KeyPress,key,Qt::NoModifier);
@@ -2628,9 +2627,9 @@ void TerminalDisplay::wheelEvent( QWheelEvent* ev )
 
     int charLine;
     int charColumn;
-    getCharacterPosition( ev->pos() , charLine , charColumn );
+    getCharacterPosition( ev->position().toPoint() , charLine , charColumn );
 
-    emit mouseSignal( ev->delta() > 0 ? 4 : 5,
+    emit mouseSignal( ev->angleDelta().y() > 0 ? 4 : 5,
                       charColumn + 1,
                       charLine + 1 +_scrollBar->value() -_scrollBar->maximum() ,
                       0);
@@ -3276,7 +3275,7 @@ void TerminalDisplay::doDrag()
   QMimeData *mimeData = new QMimeData;
   mimeData->setText(QApplication::clipboard()->text(QClipboard::Selection));
   dragInfo.dragObject->setMimeData(mimeData);
-  dragInfo.dragObject->start(Qt::CopyAction);
+  dragInfo.dragObject->exec(Qt::CopyAction);
   // Don't delete the QTextDrag object.  Qt will delete it when it's done with it.
 }
 
@@ -3533,7 +3532,7 @@ void TerminalDisplay::simulateKeySequence(const QKeySequence &keySequence)
 }
 
 void TerminalDisplay::simulateWheel(int x, int y, int buttons, int modifiers, QPointF angleDelta){
-    QWheelEvent event(QPointF(x,y), angleDelta.y(), (Qt::MouseButton) buttons, (Qt::KeyboardModifier) modifiers);
+    QWheelEvent event(QPointF(x,y), QPointF(x,y), QPoint(0,0), angleDelta.toPoint(), (Qt::MouseButtons)buttons, (Qt::KeyboardModifiers)modifiers, Qt::NoScrollPhase, false);
     wheelEvent(&event);
 }
 

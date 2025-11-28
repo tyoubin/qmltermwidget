@@ -609,9 +609,9 @@ public:
 
 private:
     virtual bool readProcInfo(int aPid) {
-        int managementInfoBase[4];
-        size_t mibLength;
-        struct kinfo_proc* kInfoProc;
+        int managementInfoBase[4]; Q_UNUSED(managementInfoBase);
+        size_t mibLength; Q_UNUSED(mibLength);
+        struct kinfo_proc* kInfoProc; Q_UNUSED(kInfoProc);
 
         managementInfoBase[0] = CTL_KERN;
         managementInfoBase[1] = KERN_PROC;
@@ -863,9 +863,10 @@ public:
 
 private:
     virtual bool readProcInfo(int aPid) {
-        int managementInfoBase[4];
-        size_t mibLength;
-        struct kinfo_proc* kInfoProc;
+        Q_UNUSED(aPid);
+        int managementInfoBase[4]; Q_UNUSED(managementInfoBase);
+        size_t mibLength; Q_UNUSED(mibLength);
+        struct kinfo_proc* kInfoProc; Q_UNUSED(kInfoProc);
 /*
         KDE_struct_stat statInfo;
 

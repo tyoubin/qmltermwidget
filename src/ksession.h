@@ -37,8 +37,8 @@ class KSession : public QObject
     Q_PROPERTY(QString  kbScheme  READ  getKeyBindings WRITE setKeyBindings NOTIFY changedKeyBindings)
     Q_PROPERTY(QString  initialWorkingDirectory READ getInitialWorkingDirectory WRITE setInitialWorkingDirectory NOTIFY initialWorkingDirectoryChanged)
     Q_PROPERTY(QString  title READ getTitle WRITE setTitle NOTIFY titleChanged)
-    Q_PROPERTY(QString  shellProgram WRITE setShellProgram)
-    Q_PROPERTY(QStringList  shellProgramArgs WRITE setArgs)
+    Q_PROPERTY(QString  shellProgram READ getShellProgram WRITE setShellProgram)
+    Q_PROPERTY(QStringList  shellProgramArgs READ getShellProgramArgs WRITE setArgs)
     Q_PROPERTY(QString  history READ getHistory)
     Q_PROPERTY(bool hasActiveProcess READ hasActiveProcess)
     Q_PROPERTY(QString foregroundProcessName READ foregroundProcessName)
@@ -94,6 +94,8 @@ public:
     QString keyBindings();
 
     QString getTitle();
+    QString getShellProgram() const;
+    QStringList getShellProgramArgs() const;
 
     /**
      * Returns \c true if the session has an active subprocess running in it
@@ -172,6 +174,8 @@ private slots:
 private:
     //Konsole::KTerminalDisplay *m_terminalDisplay;
     QString _initialWorkingDirectory;
+    QString _shellProgram;
+    QStringList _shellProgramArgs;
     Session *m_session;
 
 };

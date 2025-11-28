@@ -31,6 +31,7 @@
 #include <QSettings>
 #include <QDir>
 #include <QRegularExpression>
+#include <QRandomGenerator>
 
 
 // KDE
@@ -180,7 +181,7 @@ ColorEntry ColorScheme::colorEntry(int index , uint randomSeed) const
     Q_ASSERT( index >= 0 && index < TABLE_COLORS );
 
     if ( randomSeed != 0 )
-        qsrand(randomSeed);
+        QRandomGenerator::global()->seed(randomSeed);
 
     ColorEntry entry = colorTable()[index];
 
@@ -191,9 +192,9 @@ ColorEntry ColorScheme::colorEntry(int index , uint randomSeed) const
         const RandomizationRange& range = _randomTable[index];
 
 
-        int hueDifference = range.hue ? (qrand() % range.hue) - range.hue/2 : 0;
-        int saturationDifference = range.saturation ? (qrand() % range.saturation) - range.saturation/2 : 0;
-        int  valueDifference = range.value ? (qrand() % range.value) - range.value/2 : 0;
+        int hueDifference = range.hue ? (QRandomGenerator::global()->bounded(range.hue)) - range.hue/2 : 0;
+        int saturationDifference = range.saturation ? (QRandomGenerator::global()->bounded(range.saturation)) - range.saturation/2 : 0;
+        int  valueDifference = range.value ? (QRandomGenerator::global()->bounded(range.value)) - range.value/2 : 0;
 
         QColor& color = entry.color;
 
@@ -507,14 +508,13 @@ ColorSchemeManager::~ColorSchemeManager()
 void ColorSchemeManager::loadAllColorSchemes()
 {
     //qDebug() << "loadAllColorSchemes";
-    int failed = 0;
 
     QList<QString> nativeColorSchemes = listColorSchemes();
     QListIterator<QString> nativeIter(nativeColorSchemes);
     while ( nativeIter.hasNext() )
     {
         if ( !loadColorScheme( nativeIter.next() ) )
-            failed++;
+            ;
     }
 
     /*if ( failed > 0 )
