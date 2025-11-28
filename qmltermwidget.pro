@@ -2,6 +2,7 @@ TEMPLATE = lib
 TARGET = qmltermwidget
 QT += qml quick widgets
 CONFIG += qt plugin
+CONFIG+=sdk_no_version_check
 
 include(lib.pri)
 

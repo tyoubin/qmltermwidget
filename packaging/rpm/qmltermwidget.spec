@@ -22,7 +22,7 @@ Version:    1.0
 Release:    0%{?dist}
 Group:      System/X11/Terminals
 License:    GPL-2.0+
-URL:        https://github.com/Swordfish90/qmltermwidget
+URL:        https://github.com/tyoubin/qmltermwidget
 
 # For this spec file to work, the QMLTermWidget sources must be located
 # in a directory named QMLTermWidget-0.9 (with "0.9" being the version
