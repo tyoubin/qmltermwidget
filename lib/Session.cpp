@@ -548,7 +548,6 @@ bool Session::sendSignal(int signal)
 
      if ( result == 0 )
      {
-         _shellProcess->waitForFinished();
          return true;
      }
      else
