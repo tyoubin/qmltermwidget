@@ -1,6 +1,9 @@
 TEMPLATE = lib
 TARGET = qmltermwidget
 QT += qml quick widgets
+greaterThan(QT_MAJOR_VERSION, 5) {
+    QT += core5compat
+}
 CONFIG += qt plugin
 CONFIG+=sdk_no_version_check
 
